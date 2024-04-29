@@ -1,0 +1,71 @@
+name: Build and Release
+
+on:
+    push:
+      branches:
+        - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.20'
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build for Linux
+        run: GOOS=linux GOARCH=amd64 go build -o sa2bearer-linux-amd64
+
+      - name: Build for Windows
+        run: GOOS=windows GOARCH=amd64 go build -o sa2bearer-windows-amd64.exe
+
+      - name: Build for MacOS
+        run: GOOS=darwin GOARCH=amd64 go build -o sa2bearer-macos-amd64
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_SECRET }}
+        with:
+          tag_name: v1.${{ github.run_number }}.0
+          release_name: Release v1.${{ github.run_number }}.0
+          body: |
+            Release v1.${{ github.run_number }}.0 for Linux and Windows
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./sa2bearer-linux-amd64
+          asset_name: sa2bearer-linux-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./sa2bearer-windows-amd64.exe
+          asset_name: sa2bearer-windows-amd64.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload MacOS Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./sa2bearer-macos-amd64
+          asset_name: sa2bearer-macos-amd64
+          asset_content_type: application/octet-stream
